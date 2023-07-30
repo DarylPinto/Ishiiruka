@@ -5,7 +5,7 @@
 //! This library auto-generates C headers on build, and Slippi Dolphin is pre-configured
 //! to locate these headers and link the entire dylib.
 
-use std::ffi::{c_char, c_int, CStr};
+use std::ffi::{c_char, c_int, CStr, CString};
 
 use dolphin_logger::Log;
 use slippi_exi_device::SlippiEXIDevice;
@@ -150,4 +150,43 @@ pub extern "C" fn slprs_logging_register_container(
 #[no_mangle]
 pub extern "C" fn slprs_logging_update_container(kind: *const c_char, enabled: bool, level: c_int) {
     dolphin_logger::update_container(kind, enabled, level);
+}
+
+#[repr(C)]
+pub struct SlpResp {
+    status_code: usize,
+    resp: *const i8,
+}
+
+/// Sends a game report via ureq so we can avoid using libcurl in C++ land
+#[no_mangle]
+pub extern  "C" fn slprs_send_game_report(report_json: *const c_char, report_url: *const c_char) -> SlpResp {
+    let c_report_json_str = unsafe { CStr::from_ptr(report_json) };
+
+    let report_json = c_report_json_str
+        .to_str()
+        .expect("[ffi::send_game_report]: Failed to convert report_json c_char to str");
+
+    let c_report_url_str = unsafe { CStr::from_ptr(report_url) };
+
+    let report_url = c_report_url_str
+        .to_str()
+        .expect("[ffi::send_game_report]: Failed to convert report_url c_char to str");
+
+    let resp = ureq::post(report_url).send_string(report_json).expect("[ffi::send_game_report]: Failed to send report");
+    let status_code: usize = resp.status().into();
+    let resp = match CString::new(resp.into_string().expect("[ffi::send_game_report]: Failed to read response")) {
+        Ok(c_str_resp) => {
+            c_str_resp
+        }
+        Err(e) => {
+            eprintln!("Failed to convert resp msg to CString: {:?}", e);
+            CString::new("").unwrap()
+        }
+    };
+
+    SlpResp {
+        status_code: status_code,
+        resp: resp.as_ptr(),
+    }
 }

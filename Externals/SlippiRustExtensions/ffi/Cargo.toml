@@ -24,3 +24,4 @@ playback = []
 dolphin-logger = { path = "../logger" }
 slippi-exi-device = { path = "../exi" }
 tracing = { workspace = true }
+ureq = "2.7.1"

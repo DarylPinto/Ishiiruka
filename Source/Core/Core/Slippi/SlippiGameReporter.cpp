@@ -12,6 +12,9 @@
 #include "Common/Common.h"
 #include "Core/ConfigManager.h"
 
+// The Rust library that houses the function call for stuff
+#include "SlippiRustExtensions.h"
+
 #include <codecvt>
 #include <locale>
 
@@ -256,44 +259,46 @@ void SlippiGameReporter::ReportThreadHandler()
 			auto requestString = request.dump();
 
 			// Send report
-			std::string resp;
-			curl_easy_setopt(m_curl, CURLOPT_POST, true);
-			curl_easy_setopt(m_curl, CURLOPT_URL, REPORT_URL.c_str());
-			curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, requestString.c_str());
-			curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, requestString.length());
-			curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &resp);
-			CURLcode res = curl_easy_perform(m_curl);
+			// std::string resp;
+			// curl_easy_setopt(m_curl, CURLOPT_POST, true);
+			// curl_easy_setopt(m_curl, CURLOPT_URL, REPORT_URL.c_str());
+			// curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, requestString.c_str());
+			// curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, requestString.length());
+			// curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &resp);
+			// CURLcode res = curl_easy_perform(m_curl);
 
-			if (res != 0)
+			SlpResp resp = slprs_send_game_report(requestString.c_str(), REPORT_URL.c_str());
+
+			if (resp.status_code != 200)
 			{
-				ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing request. Err code: %d", res);
+				ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing request. Err code: %d", resp.status_code);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
 
-			long responseCode;
-			curl_easy_getinfo(m_curl, CURLINFO_RESPONSE_CODE, &responseCode);
-			if (responseCode != 200)
-			{
-				ERROR_LOG(SLIPPI, "[GameReport] Server responded with non-success status: %d", responseCode);
-				Common::SleepCurrentThread(errorSleepMs);
-				continue;
-			}
+			// long responseCode;
+			// curl_easy_getinfo(m_curl, CURLINFO_RESPONSE_CODE, &responseCode);
+			// if (responseCode != 200)
+			// {
+			// 	ERROR_LOG(SLIPPI, "[GameReport] Server responded with non-success status: %d", responseCode);
+			// 	Common::SleepCurrentThread(errorSleepMs);
+			// 	continue;
+			// }
 
 			// Check if response is valid json
-			if (!json::accept(resp))
+			if (!json::accept(resp.resp))
 			{
-				ERROR_LOG(SLIPPI, "[GameReport] Server responded with invalid json: %s", resp.c_str());
+				ERROR_LOG(SLIPPI, "[GameReport] Server responded with invalid json: %s", *resp.resp);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
 
 			// Parse the response
-			auto r = json::parse(resp);
+			auto r = json::parse(resp.resp);
 
 			if (!r.is_object())
 			{
-				ERROR_LOG(SLIPPI, "JSON was not an object. %s", resp.c_str());
+				ERROR_LOG(SLIPPI, "JSON was not an object. %s", *resp.resp);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
@@ -301,7 +306,7 @@ void SlippiGameReporter::ReportThreadHandler()
 			bool success = r.value("success", false);
 			if (!success)
 			{
-				ERROR_LOG(SLIPPI, "[GameReport] Report reached server but failed. %s", resp.c_str());
+				ERROR_LOG(SLIPPI, "[GameReport] Report reached server but failed. %s", *resp.resp);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
@@ -345,15 +350,17 @@ void SlippiGameReporter::ReportAbandonment(std::string matchId)
 	auto requestString = request.dump();
 
 	// Send report
-	curl_easy_setopt(m_curl, CURLOPT_POST, true);
-	curl_easy_setopt(m_curl, CURLOPT_URL, ABANDON_URL.c_str());
-	curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, requestString.c_str());
-	curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, requestString.length());
-	CURLcode res = curl_easy_perform(m_curl);
+	// curl_easy_setopt(m_curl, CURLOPT_POST, true);
+	// curl_easy_setopt(m_curl, CURLOPT_URL, ABANDON_URL.c_str());
+	// curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, requestString.c_str());
+	// curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, requestString.length());
+	// CURLcode res = curl_easy_perform(m_curl);
 
-	if (res != 0)
+	SlpResp resp = slprs_send_game_report(requestString.c_str(), ABANDON_URL.c_str());
+
+	if (resp.status_code != 200)
 	{
-		ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing abandonment request. Err code: %d", res);
+		ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing abandonment request. status code: %d", resp.status_code);
 	}
 }
 
@@ -371,15 +378,17 @@ void SlippiGameReporter::ReportCompletion(std::string matchId, u8 endMode)
 	auto requestString = request.dump();
 
 	// Send report
-	curl_easy_setopt(m_curl, CURLOPT_POST, true);
-	curl_easy_setopt(m_curl, CURLOPT_URL, COMPLETE_URL.c_str());
-	curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, requestString.c_str());
-	curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, requestString.length());
-	CURLcode res = curl_easy_perform(m_curl);
+	// curl_easy_setopt(m_curl, CURLOPT_POST, true);
+	// curl_easy_setopt(m_curl, CURLOPT_URL, COMPLETE_URL.c_str());
+	// curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, requestString.c_str());
+	// curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, requestString.length());
+	// CURLcode res = curl_easy_perform(m_curl);
 
-	if (res != 0)
+	SlpResp resp = slprs_send_game_report(requestString.c_str(), COMPLETE_URL.c_str());
+
+	if (resp.status_code != 200)
 	{
-		ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing completion request. Err code: %d. Msg: %s", res, m_curl_err_buf);
+		ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing completion request. Err code: %d. Msg: %s", resp.status_code, *resp.resp);
 	}
 }
 

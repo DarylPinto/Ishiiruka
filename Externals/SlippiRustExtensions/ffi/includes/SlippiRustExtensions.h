@@ -4,6 +4,11 @@
 #include <ostream>
 #include <new>
 
+struct SlpResp {
+  uintptr_t status_code;
+  const int8_t *resp;
+};
+
 extern "C" {
 
 /// Creates and leaks a shadow EXI device.
@@ -69,5 +74,8 @@ void slprs_logging_register_container(const char *kind,
 ///
 /// For more information, see `dolphin_logger::update_container`.
 void slprs_logging_update_container(const char *kind, bool enabled, int level);
+
+/// Sends a game report via ureq so we can avoid using libcurl in C++ land
+SlpResp slprs_send_game_report(const char *report_json, const char *report_url);
 
 } // extern "C"
