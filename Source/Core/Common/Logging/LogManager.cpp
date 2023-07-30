@@ -114,6 +114,13 @@ LogManager::LogManager()
         true
     );
 
+	m_Log[LogTypes::SLIPPI_RUST_OTHER] = new LogContainer(
+		"SLIPPI_RUST_OTHER",
+		"[Rust] Slippi Other",
+		LogTypes::SLIPPI_RUST_OTHER,
+		true
+	);
+
 	m_Log[LogTypes::FILEMON] = new LogContainer("FileMon", "File Monitor", LogTypes::FILEMON);
 	m_Log[LogTypes::GDB_STUB] = new LogContainer("GDB_STUB", "GDB Stub", LogTypes::GDB_STUB);
 	m_Log[LogTypes::GPFIFO] = new LogContainer("GP", "GPFifo", LogTypes::GPFIFO);

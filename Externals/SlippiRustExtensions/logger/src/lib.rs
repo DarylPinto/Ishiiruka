@@ -51,6 +51,9 @@ pub mod Log {
 
     /// Can be used to segment Jukebox logs.
     pub const Jukebox: &'static str = "SLIPPI_RUST_JUKEBOX";
+
+    /// Can be used for code that doesn't fit the other boxes
+    pub const Other: &'static str = "SLIPPI_RUST_OTHER";
 }
 
 /// Represents a `LogContainer` on the Dolphin side.

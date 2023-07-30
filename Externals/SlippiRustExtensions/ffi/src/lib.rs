@@ -161,6 +161,7 @@ pub struct SlpResp {
 /// Sends a game report via ureq so we can avoid using libcurl in C++ land
 #[no_mangle]
 pub extern "C" fn slprs_send_game_report(report_json: *const c_char, report_url: *const c_char) -> SlpResp {
+    tracing::warn!("Starting to send report");
     let c_report_json_str = unsafe { CStr::from_ptr(report_json) };
 
     let report_json = c_report_json_str
@@ -177,10 +178,12 @@ pub extern "C" fn slprs_send_game_report(report_json: *const c_char, report_url:
         .send_string(report_json)
         .expect("[ffi::send_game_report]: Failed to send report");
     let status_code: usize = resp.status().into();
-    let resp = match CString::new(resp.into_string().expect("[ffi::send_game_report]: Failed to read response")) {
+    let ureq_resp = resp.into_string().expect("[ffi::send_game_report]: Failed to read response");
+    tracing::warn!("got resp {}", ureq_resp);
+    let resp = match CString::new(ureq_resp) {
         Ok(c_str_resp) => c_str_resp,
         Err(e) => {
-            eprintln!("Failed to convert resp msg to CString: {:?}", e);
+            tracing::error!("Failed to convert resp msg to CString: {:?}", e);
             CString::new("").unwrap()
         },
     };
