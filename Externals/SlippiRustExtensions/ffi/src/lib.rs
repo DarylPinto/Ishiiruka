@@ -155,7 +155,7 @@ pub extern "C" fn slprs_logging_update_container(kind: *const c_char, enabled: b
 #[repr(C)]
 pub struct SlpResp {
     status_code: usize,
-    resp: *const i8,
+    resp: *const c_char,
 }
 
 /// Sends a game report via ureq so we can avoid using libcurl in C++ land
@@ -187,6 +187,6 @@ pub extern  "C" fn slprs_send_game_report(report_json: *const c_char, report_url
 
     SlpResp {
         status_code: status_code,
-        resp: resp.as_ptr(),
+        resp: resp.as_c_str().as_ptr(),
     }
 }

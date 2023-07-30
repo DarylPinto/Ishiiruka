@@ -6,7 +6,7 @@
 
 struct SlpResp {
   uintptr_t status_code;
-  const int8_t *resp;
+  const char *resp;
 };
 
 extern "C" {

@@ -267,7 +267,10 @@ void SlippiGameReporter::ReportThreadHandler()
 			// curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &resp);
 			// CURLcode res = curl_easy_perform(m_curl);
 
+			WARN_LOG(SLIPPI_ONLINE, "[GameReport] calling rust side");
 			SlpResp resp = slprs_send_game_report(requestString.c_str(), REPORT_URL.c_str());
+			auto respString = std::string(resp.resp);
+			WARN_LOG(SLIPPI_ONLINE, "[GameReport] exiting rust side, status_code=%d, resp=%s", resp.status_code, respString);
 
 			if (resp.status_code != 200)
 			{
@@ -286,19 +289,19 @@ void SlippiGameReporter::ReportThreadHandler()
 			// }
 
 			// Check if response is valid json
-			if (!json::accept(resp.resp))
+			if (!json::accept(respString))
 			{
-				ERROR_LOG(SLIPPI, "[GameReport] Server responded with invalid json: %s", *resp.resp);
+				ERROR_LOG(SLIPPI, "[GameReport] Server responded with invalid json: %s", respString);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
 
 			// Parse the response
-			auto r = json::parse(resp.resp);
+			auto r = json::parse(respString);
 
 			if (!r.is_object())
 			{
-				ERROR_LOG(SLIPPI, "JSON was not an object. %s", *resp.resp);
+				ERROR_LOG(SLIPPI, "JSON was not an object. %s", respString);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
@@ -306,7 +309,7 @@ void SlippiGameReporter::ReportThreadHandler()
 			bool success = r.value("success", false);
 			if (!success)
 			{
-				ERROR_LOG(SLIPPI, "[GameReport] Report reached server but failed. %s", *resp.resp);
+				ERROR_LOG(SLIPPI, "[GameReport] Report reached server but failed. %s", respString);
 				Common::SleepCurrentThread(errorSleepMs);
 				continue;
 			}
@@ -385,10 +388,11 @@ void SlippiGameReporter::ReportCompletion(std::string matchId, u8 endMode)
 	// CURLcode res = curl_easy_perform(m_curl);
 
 	SlpResp resp = slprs_send_game_report(requestString.c_str(), COMPLETE_URL.c_str());
+	auto respString = std::string(resp.resp);
 
 	if (resp.status_code != 200)
 	{
-		ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing completion request. Err code: %d. Msg: %s", resp.status_code, *resp.resp);
+		ERROR_LOG(SLIPPI_ONLINE, "[GameReport] Got error executing completion request. Err code: %d. Msg: %s", resp.status_code, respString);
 	}
 }
 
