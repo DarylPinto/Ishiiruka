@@ -188,8 +188,12 @@ pub extern "C" fn slprs_send_game_report(report_json: *const c_char, report_url:
         },
     };
 
-    SlpResp {
+    let slp_resp = SlpResp {
         status_code: status_code,
         resp: resp.as_c_str().as_ptr(),
-    }
+    };
+
+    std::mem::forget(resp);
+
+    slp_resp
 }
