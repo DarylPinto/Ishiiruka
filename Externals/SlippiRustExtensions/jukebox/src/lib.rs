@@ -39,6 +39,7 @@ struct DolphinGameState {
     volume: f32,
     is_paused: bool,
     match_info: u8,
+    is_trigger_held: bool,
 }
 
 impl Default for DolphinGameState {
@@ -52,6 +53,7 @@ impl Default for DolphinGameState {
             volume: 0.0,
             is_paused: false,
             match_info: 0,
+            is_trigger_held: false,
         }
     }
 }
@@ -61,7 +63,7 @@ enum MeleeEvent {
     TitleScreenEntered,
     MenuEntered,
     LotteryEntered,
-    GameStart(u8), // stage id
+    GameStart(u8, bool), // (stage_id, is_trigger_held)
     GameEnd,
     RankedStageStrikeEntered,
     VsOnlineOpponent,
@@ -285,8 +287,8 @@ impl Jukebox {
             RankedStageStrikeEntered => {
                 *track_id = Some(*tournament_track);
             },
-            GameStart(stage_id) => {
-                *track_id = tracks::get_stage_track_id(stage_id);
+            GameStart(stage_id, is_trigger_held) => {
+                *track_id = tracks::get_stage_track_id(stage_id, is_trigger_held);
             },
             Pause => {
                 sink.set_volume(*volume * 0.2);
@@ -331,7 +333,7 @@ impl Jukebox {
         } else if prev_state.scene_major != SCENE_TROPHY_LOTTERY && state.scene_major == SCENE_TROPHY_LOTTERY {
             MeleeEvent::LotteryEntered
         } else if (!prev_state.in_game && state.in_game) || prev_state.stage_id != state.stage_id {
-            MeleeEvent::GameStart(state.stage_id)
+            MeleeEvent::GameStart(state.stage_id, state.is_trigger_held)
         } else if prev_state.in_game && state.in_game && state.match_info == 1 {
             MeleeEvent::GameEnd
         } else if prev_state.volume != state.volume {
@@ -365,6 +367,13 @@ impl Jukebox {
         // https://github.com/bkacjios/m-overlay/blob/d8c629d/source/modules/games/GALE01-2.lua#L353
         let is_paused = read::<u8>(m_p_ram + 0x4D640F)? == 1;
 
+        let is_p1_trigger_held = read::<u8>(m_p_ram + 0x4C1FB3)? >= 0x20;
+        let is_p2_trigger_held = read::<u8>(m_p_ram + 0x4C1FF7)? >= 0x20;
+        let is_p3_trigger_held = read::<u8>(m_p_ram + 0x4C203B)? >= 0x20;
+        let is_p4_trigger_held = read::<u8>(m_p_ram + 0x4C207F)? >= 0x20;
+
+        let is_trigger_held = is_p1_trigger_held || is_p2_trigger_held || is_p3_trigger_held || is_p4_trigger_held;
+
         Ok(DolphinGameState {
             in_game: utils::is_in_game(scene_major, scene_minor),
             in_menus: utils::is_in_menus(scene_major, scene_minor),
@@ -374,6 +383,7 @@ impl Jukebox {
             stage_id,
             is_paused,
             match_info,
+            is_trigger_held
         })
     }
 }

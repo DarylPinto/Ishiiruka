@@ -110,7 +110,7 @@ pub(crate) fn get_track_id_by_filename(track_filename: &str) -> Option<TrackId> 
 }
 
 /// Given a stage ID, retrieve the ID of the track that should play
-pub(crate) fn get_stage_track_id(stage_id: u8) -> Option<TrackId> {
+pub(crate) fn get_stage_track_id(stage_id: u8, force_alt_track: bool) -> Option<TrackId> {
     use self::TrackId::*;
 
     // Stage IDs and their associated tracks
@@ -163,7 +163,7 @@ pub(crate) fn get_stage_track_id(stage_id: u8) -> Option<TrackId> {
     // If the stage has an alternate track associated, there's a 12.5% chance it will be selected
     match track_ids {
         Some(track_ids) => match track_ids {
-            (_, Some(id)) if fastrand::u8(0..8) == 0 => Some(id),
+            (_, Some(id)) if force_alt_track || fastrand::u8(0..8) == 0 => Some(id),
             (id, _) => Some(id),
         },
         None => None,
